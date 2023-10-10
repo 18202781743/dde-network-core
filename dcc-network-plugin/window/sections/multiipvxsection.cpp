@@ -107,42 +107,42 @@ void MultiIpvxSection::saveSettings()
         Ipv4Setting::Ptr ipv4Setting = m_ipvxSetting.staticCast<Ipv4Setting>();
         ipv4Setting->setMethod(method);
         if (method == Ipv4Setting::ConfigMethod::Automatic) {
-            QList<IpAddress>().clear();
-            IpAddress ipAddressAuto;
-            ipAddressAuto.setIp(QHostAddress(""));
-            ipAddressAuto.setNetmask(QHostAddress(""));
-            ipAddressAuto.setGateway(QHostAddress(""));
-            ipv4Setting->setAddresses(QList<IpAddress>() << ipAddressAuto);
+            ipv4Setting->setAddresses({});
         } else if (method == Ipv4Setting::ConfigMethod::Manual) {
             QList<IpAddress> ipList;
-            for (IPInputSection *ipSection : m_ipSections)
+            for (IPInputSection *ipSection : m_ipSections) {
                 ipList << ipSection->ipAddress();
-
+            }
             ipv4Setting->setAddresses(ipList);
+        } else if (method == Ipv4Setting::ConfigMethod::Disabled) {
+            qInfo() << "disable ipv4.";
+            ipv4Setting->setAddresses({});
+            return;
         }
     } else if (m_ipvxSetting->type() == Setting::SettingType::Ipv6) {
         Ipv6Setting::ConfigMethod method = m_methodChooser->currentData().value<Ipv6Setting::ConfigMethod>();
         // 如果是自动模式，则直接返回true
         Ipv6Setting::Ptr ipv6Setting = m_ipvxSetting.staticCast<Ipv6Setting>();
         ipv6Setting->setMethod(method);
+
         if (method == Ipv6Setting::Ignored) {
-            ipv6Setting->setAddresses(QList<IpAddress>());
             return;
         }
+
+        if (method == Ipv6Setting::ConfigDisabled) {
+            qInfo() << "disable ipv6.";
+            ipv6Setting->setAddresses({});
+            return;
+        }
+
         if (method == Ipv6Setting::ConfigMethod::Manual) {
             QList<IpAddress> ipList;
-            for (IPInputSection *ipSection : m_ipSections)
+            for (IPInputSection *ipSection : m_ipSections) {
                 ipList << ipSection->ipAddress();
+            }
             ipv6Setting->setAddresses(ipList);
         } else if (method == Ipv6Setting::ConfigMethod::Automatic) {
-            QList<IpAddress> ipAddresses;
-            ipAddresses.clear();
-            IpAddress ipAddressAuto;
-            ipAddressAuto.setIp(QHostAddress(""));
-            ipAddressAuto.setPrefixLength(0);
-            ipAddressAuto.setGateway(QHostAddress(""));
-            ipAddresses.append(ipAddressAuto);
-            ipv6Setting->setAddresses(ipAddresses);
+            ipv6Setting->setAddresses({});
         }
     }
 
@@ -187,8 +187,9 @@ void MultiIpvxSection::addIPV4Config()
     m_headerEditWidget->setTitle(tr("IPv4"));
     m_headerWidget->setTitle(tr("IPv4"));
     Ipv4ConfigMethodStrMap = {
-        { tr("Auto"), Ipv4Setting::ConfigMethod::Automatic },
-        { tr("Manual"), Ipv4Setting::ConfigMethod::Manual }
+      {tr("Auto"), Ipv4Setting::ConfigMethod::Automatic},
+      {tr("Manual"), Ipv4Setting::ConfigMethod::Manual},
+      {tr("Disable"), Ipv4Setting::ConfigMethod::Disabled}
     };
 
     for (const QString &key : Ipv4ConfigMethodStrMap.keys())
@@ -210,9 +211,10 @@ void MultiIpvxSection::addIPV6Config()
     m_headerEditWidget->setTitle(tr("IPv6"));
     m_headerWidget->setTitle(tr("IPv6"));
     Ipv6ConfigMethodStrMap = {
-        { tr("Auto"), Ipv6Setting::ConfigMethod::Automatic },
-        { tr("Manual"), Ipv6Setting::ConfigMethod::Manual },
-        { tr("Ignore"), Ipv6Setting::ConfigMethod::Ignored }
+      {tr("Auto"), Ipv6Setting::ConfigMethod::Automatic},
+      {tr("Manual"), Ipv6Setting::ConfigMethod::Manual},
+      {tr("Ignore"), Ipv6Setting::ConfigMethod::Ignored},
+      {tr("Disable"),Ipv6Setting::ConfigMethod::ConfigDisabled}
     };
 
     for (const QString &key : Ipv6ConfigMethodStrMap.keys())
